@@ -1,0 +1,97 @@
+services:
+  # -------------------------------------------------------------
+  # Document Store: MongoDB (with single-node replica set for CDC)
+  # -------------------------------------------------------------
+  mongodb:
+    image: mongo:7.0
+    container_name: cdm-mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: cognitive_mesh
+    command: ["--bind_ip_all", "--replSet", "rs0"]
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - cdm-network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand(\"ping\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------------
+  # Key-Value Store: Redis (Hot Cache & High-Speed State)
+  # -------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: cdm-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - cdm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # -------------------------------------------------------------
+  # Graph Database: Neo4j (Entity Relationships & Graph Traversals)
+  # -------------------------------------------------------------
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: cdm-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474" # HTTP Browser
+      - "7687:7687" # Bolt Protocol
+    environment:
+      NEO4J_AUTH: neo4j/password123
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 1G
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - cdm-network
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "password123", "RETURN 1;"]
+      interval: 15s
+      timeout: 15s
+      retries: 5
+
+  # -------------------------------------------------------------
+  # Vector Database: Qdrant (Universal Semantic Indexing Layer)
+  # -------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    container_name: cdm-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333" # REST API & Dashboard
+      - "6334:6334" # gRPC API
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - cdm-network
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mongo_data:
+  redis_data:
+  neo4j_data:
+  qdrant_data:
+
+networks:
+  cdm-network:
+    driver: bridge

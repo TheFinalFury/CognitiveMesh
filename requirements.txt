@@ -1,0 +1,23 @@
+# Core Web Framework & Async Server
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.6.4
+pydantic-settings>=2.2.1
+python-dotenv>=1.0.1
+httpx>=0.27.0
+
+# Database Connectors
+pymongo>=4.6.2
+redis>=5.0.3
+neo4j>=5.18.0
+qdrant-client>=1.8.2
+
+# Semantic & Vector Processing
+sentence-transformers>=2.7.0
+transformers>=4.51.0
+numpy>=1.26.0
+
+# Testing & Utilities
+pytest>=8.1.1
+pytest-asyncio>=0.23.5
+python-docx>=1.1.0
